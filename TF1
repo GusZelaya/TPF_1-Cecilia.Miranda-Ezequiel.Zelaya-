@@ -3,7 +3,9 @@
 #include <stdlib.h>
 #include <math.h>
 #include <stdbool.h>
-
+/*
+ * defines para facilitar el entendimiento del codigo
+ */
 #define BLANCO 1
 #define NEGRO 0
 #define PERSONA 1
@@ -11,13 +13,8 @@
 
 char tablero [16][16];
 /*
- * funcion encargada de guardar en diferentes vectores los datos ingresados por el usuario para el desarrollo de la partida
- * -->llama a los vectores con punteros
- *    ingresa los datos del usuario en los vectores correspondientes
- *    recibe y valida los datos del usuario para cada dato.
- * -->cualquier nombre es valido
- * -->maneras de optimizar: lograr meter cada vector en un vector maestro
- *    para luego invocar los datos necesarios usando los indices del vector maestro.
+ * funcion encargada de limpiar el buffer
+ * limpia los restos dejados por el usuario en el caso de ser necesario
  */
 void cleanBuffer()
 {
@@ -25,6 +22,13 @@ void cleanBuffer()
     while ((c = getchar()) != '\n');
 }
 
+/*
+ * funcion encargada de general el tablero inicial
+ * ---crea una matriz de 15x15
+ * ---carga la matriz con N,B o - dependiendo si en el espacio
+ * cargado pertenece al jugador negro, blanco o si el espacio est[a vacio
+ *
+ */
 void tableroInicial(){
     srand(time(NULL));
     int i,j;
@@ -42,6 +46,9 @@ void tableroInicial(){
   }
 }
 
+/*
+ * funcion que imprime el tablero
+ */
 void imprimirTablero(){
     //Imprime tablero
     int i,j;
@@ -60,15 +67,26 @@ void imprimirTablero(){
     }
 }
 /*
- * esta funcion permite al usuario cargar la congifuracion de la partida (elige pieza y turno)
- * se utilizan bucles con while para que no puede ingresar valores que no sean los requeridos y devuelven los mismos mediante punteros
+ * estructura de datos cadena
+ * --- puntero de caracteres
+ * --- cantidad de caracteres utilizables
+ * --- cantidad de caracteres utilizados
  */
-
 typedef struct string{
 	char* array;
 	unsigned int charsTotales;
 	unsigned int charsUsados;
 }string;
+
+/*
+ * funcion encargada de guardar en diferentes vectores los datos ingresados por el usuario para el desarrollo de la partida
+ * -->llama a los vectores con punteros
+ *    ingresa los datos del usuario en los vectores correspondientes
+ *    recibe y valida los datos del usuario para cada dato.
+ * -->cualquier nombre es valido
+ * -->maneras de optimizar: lograr meter cada vector en un vector maestro
+ *    para luego invocar los datos necesarios usando los indices del vector maestro.
+ */
 int UserData(char *nombre, char *lado, char *turno) {
     printf("BIENVENIDO A HOPPITI!\nIngrese el nombre del jugador: ");
     scanf("%s",nombre);
@@ -104,47 +122,54 @@ int UserData(char *nombre, char *lado, char *turno) {
     cleanBuffer();
     return 0;
 }
-
+/*
+ * estrutura empleada para almacenar las coordenadas de la jugada realizada
+ * o de la ficha a mover
+ */
 typedef struct coord{
   int x;
   int y;
 }coord;
 
-void elegirCoord(char* mensaje,coord* coordenada){
+/*
+ * funcion encargada de que el usuario ingrese las coordenadas de la ficha que quiere mover
+ */
+void elegirCoord(char* mensaje,coord* coordenada){ //imprime el mensaje enviado y el vector para asignar las jugadas al jugador que llama la funcion
 
   printf("%s\n",mensaje);
-  coordenada->x=-1;
+  coordenada->x=-1;//asigna un valor inicial a las variables x e y
   coordenada->y=-1;
   while (((coordenada->x <0) || (coordenada->x > 15)))
   {
     printf("ingrese la posición en x para la ficha que desea mover: ");
-    scanf("%d", &coordenada->x);
+    scanf("%d", &coordenada->x);// carga la jugada en x
   }
   while (coordenada->y<0 || coordenada->y>15)
     {
       printf("ingrese la posición en y para la ficha que desea mover: ");
-      scanf("%d", &coordenada->y);
+      scanf("%d", &coordenada->y);// carga la jugada en y
     }
 
 }
-
-void randomPC(coord* coordenada){
-  coordenada->x=rand()%16;
-  coordenada->y=rand()%16;
-}
-int isJumpable(int tablero[16][16],int coord[4]){
-    bool isValid = false;
-    int diffI = (coord[2]-coord[0])/2;
+/*
+ * funcion encargada de verificar si la ficha elegida por el jugador es saltable o no
+ */
+int saltable(int tablero[16][16],int coord[4]){
+    bool validooo = false;
+    int diffI = (coord[2]-coord[0])/2;//calcula la diferencia de espacios en i, analogamente se hace lo mismo abajo para j
     int diffJ = (coord[3]-coord[1])/2;
     int midPosicI = coord[0] + diffI, midPosicJ = coord[1] + diffJ;
     //-midPosic es la coordenada de la pieza a la que se quiere saltar
-    isValid = (tablero[midPosicI][midPosicJ] == '-')? false: true;
-    isValid = (diffI == 0 && diffJ == 0)? false: isValid;
-    return isValid;
+    validooo = (tablero[midPosicI][midPosicJ] == '-')? false: true;
+    validooo = (diffI == 0 && diffJ == 0)? false: validooo;
+    return validooo;
 }
+/*
+ * jugada encargada de chequear la jugada
+ */
 int checkJugada(coord pcActual,coord pcSiguiente){
     int coord[4] = {pcActual.x,pcActual.y,pcSiguiente.x,pcSiguiente.y};
-    bool isValid = false;
+    bool validooo = false;
     int absDiffI = abs(coord[0]-coord[2]);
     int absDiffJ = abs(coord[1]-coord[3]);
     //No se puede seleccionar una pieza vacia
@@ -152,24 +177,32 @@ int checkJugada(coord pcActual,coord pcSiguiente){
         return false;
     }
     if(absDiffI <= 1 && absDiffJ <= 1){
-        isValid = (tablero[coord[2]][coord[3]] == '-')? true: false;
+        validooo = (tablero[coord[2]][coord[3]] == '-')? true: false;
     }else{//es un salto
         if((absDiffI == 2 && absDiffJ == 2) || (absDiffI == 0 && absDiffJ == 2) || (absDiffI == 2 && absDiffJ == 0) ){
-            isValid = (tablero[coord[2]][coord[3]] != '-')? false: isJumpable(tablero,coord);
+            validooo = (tablero[coord[2]][coord[3]] != '-')? false: saltable(tablero,coord);
         }
     }
-    return isValid;
+    return validooo;
 }
-
+/*
+ * jugada encargada de cargar la jugada de la maquina
+ */
 int coinFlip( int range){
-  static int xd = 0;
-  (xd == 0)? srand(time(NULL)):1;
-  xd++;
+  static int aaa= 0;
+  (aaa== 0)? srand(time(NULL)):1;
+  aaa++;
   return rand()%(range+1);
 }
+/*
+ * deja el rango de jugadas posibles entre 0 y 15, dentro de la matriz
+ */
 int rango(int number){
   return 0<=number && number<=15;
 }
+/*
+ * funcion principal donde da el juego en si
+ */
 void juegoPurete(char *nombre,unsigned int colorJugador, unsigned int turno){
   coord jugadorActual;
   coord jugadorSiguiente;
@@ -225,7 +258,9 @@ void juegoPurete(char *nombre,unsigned int colorJugador, unsigned int turno){
 }
 
 /*
- *
+ * funcion encargada de verificar si el jugador blanco gana la partida
+ * verifica la parte superior de una hipotetica diagonal secundaria que se
+ * da en la ezquina superior derecha del tablero
  */
 int victoriaBlanco()
 {
@@ -259,7 +294,11 @@ int victoriaBlanco()
     }
     return 0;
 }
-
+/*
+ * funcion encargada de verificar si el jugador negro gana la partida
+ * verifica la parte superior de una hipotetica diagonal secundaria que se
+ * da en la esquina inferior derecha
+ */
 int victoriaNegro()
 {
   int cont=0;
@@ -295,7 +334,13 @@ int victoriaNegro()
   }
   return 0;
 }
-
+/*
+ * en el main>
+ * --- se inicia el tablero
+ * --- se imprime el mismo
+ *--- se crean los vectores para que el usuario settee la configuracion del juego
+ *--- se llama a la funcion que inicia el juego
+ */
 int main()
 {
     tableroInicial();
