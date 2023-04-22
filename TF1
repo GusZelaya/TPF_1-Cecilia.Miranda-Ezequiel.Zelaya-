@@ -1,0 +1,991 @@
+#include <stdio.h>
+#include <time.h>
+#include <stdlib.h>
+#include <math.h>
+char tablero [16][16];
+/*
+* funcion encargada de guardar en diferentes vectores los datos ingresados por el usuario para el desarrollo de la partida
+* -->llama a los vectores con punteros
+*                        ingresa los datos del usuario en los vectores correspondientes
+*                        recibe y valida los datos del usuario para cada dato.
+* -->cualquier nombre es valido
+* -->maneras de optimizar: lograr meter cada vector en un vector maestro
+*                        para luego invocar los datos necesarios usando los indices del vector maestro.
+*/
+void cleanBuffer()
+{
+    char c;
+    while ((c = getchar()) != '\n');
+}
+
+void tableroInicial(){
+    srand(time(NULL));
+    int i,j;
+    for(i = 0;i<16;i++ ){
+        for(j=0;j<16;j++){
+            tablero[i][j] = '-';
+            // está en el medio
+            if((i==0 && j<5)|| (i==1 && j<5) || (i==2 && j<4) || (i==3 && j<3) || (i==4 && j<2) ){ //Posiciona las fichas Negras
+                                                       tablero[i][j] = 'N';
+                                         }
+                                         if((i==11 && j>13) || (i==12 && j>12) || (i==13 && j>11) || (i==14 && j>10) || (i==15 && j>10) ){ //Posiciona las fichas Blancas
+                                                       tablero[i][j] = 'B';
+                                         }
+                           }
+              }
+}
+
+void imprimirTablero(){
+    //Imprime tablero
+    int i,j;
+    printf("Tablero:\n");
+    printf("\t ");
+    for(i=0;i<16;i++){
+        printf("\t %d",i);
+    }
+    printf("\n");
+    for(i=0;i<16;i++){
+        printf("\t %d",i);
+        for(j=0;j<16;j++){
+            printf("\t %c", tablero[i][j]);
+        }
+        printf("\n");
+    }
+}
+/*
+* esta funcion permite al usuario cargar la congifuracion de la partida (elige pieza y turno)
+* se utilizan bucles con while para que no puede ingresar valores que no sean los requeridos y devuelven los mismos mediante punteros
+*/
+int UserData(char *nombre, char *lado, char *turno) {
+    char c;
+    int i;
+    printf("BIENVENIDO A HOPPITI!\nIngrese el nombre del jugador:\n");
+    i = 0;
+    do{
+              c=getchar();
+              nombre[i++] = c;
+
+    }while(c!='\n');
+    cleanBuffer();
+    printf("ELIJA SU LADO: Jugador Blanco --> 1 | Jugador Negro --> 2\nsi desea aleatorizar la configuración de la partida--> 3");
+    while (*lado != '1' && *lado != '2' && *lado !='3') {
+        *lado = getchar();
+        /*
+         * permite al usuario elegir que se aleatorize la configuracion de la partida mediante un rand
+         * si el usuario elige esta opcion al asignar los valores a los punteros se invoca un return para terminar la funcion
+         */
+        if (*lado=='3')
+        {
+              *lado=(rand()%1)+1;
+              *turno=(rand()%1)+1;
+              return 0;
+        }
+        if (*lado != '1' && *lado != '2') {
+              cleanBuffer();
+            printf("Valor invalido. Intenta nuevamente.\n");
+        }
+    }
+    cleanBuffer();
+    printf("QUIEN EMPIEZA EL JUEGO? Usuario --> 1 | Maquina --> 2\n");
+    *turno = getchar();
+
+    while (*turno != '1' && *turno != '2')
+    {
+        printf("Valor invalido. Intenta nuevamente.\n");
+        *turno = getchar();
+        cleanBuffer();
+    }
+   cleanBuffer();
+    return 0;
+}
+
+typedef struct coord{
+              int x;
+              int y;
+}coord;
+
+
+void elegirCoord(char* mensaje,coord* coordenada,char player){
+
+
+              printf("%s\n",mensaje);
+              coordenada->x=-1;
+              coordenada->y=-1;
+              while (((coordenada->x <0) || (coordenada->x > 15)))
+              {
+                           printf("ingrese la posición en x para la ficha que desea mover: ");
+                           scanf("%d", &coordenada->x);
+              }
+              while (coordenada->y<0 || coordenada->y>15)
+                           {
+                                         printf("ingrese la posición en y para la ficha que desea mover: ");
+                                         scanf("%d", &coordenada->y);
+                           }
+
+
+}
+
+void randomPC(coord* coordenada){
+              coordenada->x=rand()%16;
+              coordenada->y=rand()%16;
+}
+
+int verificarMovimiento(coord act, coord sgt, char lado){
+              if(lado == '1' && tablero[act.x][act.y]!= 'B')
+                           return 0;
+              if(lado == '2' && tablero[act.x][act.y]!= 'N')
+                           return 0;
+
+              if(act.x == sgt.y && act.y ==sgt.y){
+                           return 0;
+              }
+
+              if(abs(act.y - sgt.y)>2 || abs(act.y - sgt.y)>2)
+                           return 0;
+
+              if(tablero[sgt.x][sgt.y] != '-')
+                           return 0;
+
+              if(abs(act.y - sgt.y)== 1 || abs(act.x - sgt.x)== 1)
+              {
+                           if(act.x == sgt.x && act.y != sgt.y){
+                                         if(abs(act.y - sgt.y)!= 1)
+                                                       return 0;
+                           }
+                           else if(act.y == sgt.y && act.x != sgt.x){
+                                         if(abs(act.x - sgt.x)!= 1)
+                                                       return 0;
+                           }
+
+                           else if(act.y != sgt.y && act.x != sgt.x){
+                                         if(abs(act.x - sgt.x)!= 1)
+                                                       return 0;
+                           }
+              }
+              else{
+                           if(act.y - sgt.y == 2 && act.x == sgt.x){
+                                         if(tablero[act.x][act.y-1]!=(lado == '1'?'B':'N')){
+                                                       return 0;
+                                         }
+                           }
+                           else if(act.y - sgt.y == -2 && act.x == sgt.x){
+                                         if(tablero[act.x][act.y+1]!=(lado == '1'?'B':'N')){
+                                                       return 0;
+                                         }
+                           }
+                           else if(act.x - sgt.x == 2 && act.y == sgt.y){
+                                         if(tablero[act.x-1][act.y]!=(lado == '1'?'B':'N')){
+                                                       return 0;
+                                         }
+                           else if(act.x - sgt.x == -2 && act.y == sgt.y){
+                                         if(tablero[act.x+1][act.y]!=(lado == '1'?'B':'N')){
+                                                       return 0;
+                                         }
+                           }
+              }
+
+
+}
+
+
+              return 1;
+}
+
+int rango(int number){
+              return 0<=number && number<=15;
+}
+void juegoPurete(char *nombre,char lado, char turno){
+              coord jugadorActual;
+              coord jugadorSiguiente;
+              coord pcActual;
+              coord pcSiguiente;
+
+              int victoria = 0;
+
+              while(victoria == 0){
+                           while(1){
+                                                                    printf("juega:%s\n",nombre);
+                                                                    char bandera = 0;
+                                                                    if(turno == '1'){
+                                                                                  do{
+                                                                                                elegirCoord("Elija la posicion inicial",&jugadorActual,1);
+                                                                                                elegirCoord("Elija la posicion a mover",&jugadorSiguiente,1);
+                                                                                                bandera = verificarMovimiento(jugadorActual,jugadorSiguiente,lado);
+                                                                                  }while(bandera == 0);
+                                                                                  tablero[jugadorActual.x][jugadorActual.y] = '-';
+                                                                                  tablero[jugadorSiguiente.x][jugadorSiguiente.y] = 'B';
+                                                                                  victoria=victoriaBlanco();
+                                                                                  imprimirTablero();
+                                                                                  if (victoria!=0)
+                                                                                  {
+                                                                                                printf("VICTORIA DE %s", nombre);
+                                                                                                break;
+                                                                                  }
+
+                                                                                  turno = '2';
+                                                                    }
+                                                                    if(turno == '2'){
+                                                                                  printf("juega: maquina\n");
+                                                                                  do{
+
+                                                                                                do{
+                                                                                                             randomPC(&pcActual);
+                                                                                                             pcSiguiente.x = pcActual.x +rand()%3*(rand()%1?-1:1);
+                                                                                                             pcSiguiente.y = pcActual.y +rand()%3*(rand()%1?-1:1);
+                                                                                                }while(rango(pcSiguiente.x) && rango(pcSiguiente.y));
+
+                                                                                                bandera = verificarMovimiento(jugadorActual,jugadorSiguiente,'2');
+                                                                                  }while(bandera == 0);
+                                                                                  tablero[pcActual.x][pcActual.y] = '-';
+                                                                                  tablero[pcSiguiente.x][pcSiguiente.y] = 'N';
+                                                                                  imprimirTablero();
+                                                                                  victoria=victoriaNegro();
+                                                                                  if (victoria!=0)
+                                                                                  {
+                                                                                                printf("VICTORIA DE LA MAQUINA");
+                                                                                                break;
+                                                                                  }
+                                                                    }
+
+                                         }
+
+}
+}
+
+
+void juego(char *nombre,char lado, char turno)
+{
+              int static NumMaquinaFicha[2];
+              int static NumMaquinaJugada[2];
+              int static NumUsuarioFicha[2];
+              int static NumUsuarioJugada[2];
+              int static victoria=0;
+              while(victoria==0)
+              {
+                           if(lado=='1')//si jugador elijio ser blanco
+                           {
+                                         if(turno=='1')//si jugador elijo comenzar primero
+                                         {
+                                                       while (1)
+                                                       {
+                                                                    printf("juega:%s\n",nombre);
+                                                                    ValorUsuarioFicha(NumUsuarioFicha,1); //esta invocacion es para que el usuario eliha que ficha quiere mover
+                                                                     ValorUsuarioLugar(NumUsuarioJugada,1,NumUsuarioFicha[0],NumUsuarioFicha[1]);//esta invocacion es para que el usuario elija a donde quiere mover la ficha
+                                                                    victoria=victoriaBlanco();
+                                                                    if (victoria!=0)
+                                                                    {
+                                                                                  printf("VICTORIA DE %s", nombre);
+                                                                                  break;
+                                                                    }
+                                                                    printf("juega: maquina\n");
+                                                                    ValorMaquina(NumMaquinaFicha); //esta invocacion es para que la maquina elija que ficha quiere mover
+                                                                    ValorMaquina(NumMaquinaJugada);//esta invocacion es para que la maquina elija a donde quiere mover la ficha
+                                                                    victoria=victoriaNegro();
+                                                                    if (victoria!=0)
+                                                                    {
+                                                                                  printf("VICTORIA DE LA MAQUINA");
+                                                                                  break;
+                                                                    }
+                                                                    /*
+                                                                    * valormaquina-----a esta parte le falta la funcion que verifique que es una jugada valida
+                                                                    * valorusuario-----a esta perte le falta la funcion que verifique que es una jugada valida
+                                                                    *
+                                                                    * en ambos casos tambien hace falta que la funcion verifique si es que se realiza o no un salto
+                                                                    *
+                                                                    */
+                                                       }
+                                         }else{//si jugador elijio empezar segundo
+                                                       while (1)
+                                                       {
+                                                                    printf("juega la maquina\n");
+                                                                    ValorMaquina(NumMaquinaFicha);//esta invocacion es para que la maquina elija que ficha quiere mover
+                                                                    ValorMaquina(NumMaquinaJugada);//esta invocacion es para que la maquina elija a donde quiere mover la ficha
+                                                                    victoria=victoriaNegro();
+                                                                    if (victoria!=0)
+                                                                    {
+                                                                                  printf("VICTORIA DE LA MAQUINA");
+                                                                                  break;
+                                                                    }
+                                                                    printf("juega:%s\n",nombre);
+                                                                    ValorUsuarioFicha(NumUsuarioFicha,1);//esta invocacion es para que el usuario eliha que ficha quiere mover
+                                                                     ValorUsuarioLugar(NumUsuarioJugada,1,NumUsuarioFicha[0],NumUsuarioFicha[1]);//esta invocacion es para que el usuario elija a donde quiere mover la ficha
+                                                                    victoria=victoriaBlanco();
+                                                                    if (victoria!=0)
+                                                                    {
+                                                                                  printf("VICTORIA DE %s", nombre);
+                                                                                  break;
+                                                                    }
+                                                                    /*
+                                                                    * valormaquina-----a esta parte le falta la funcion que verifique que es una jugada valida
+                                                                    * valorusuario-----a esta perte le falta la funcion que verifique que es una jugada valida
+                                                                    *
+                                                                    * en ambos casos tambien hace falta que la funcion verifique si es que se realiza o no un salto
+                                                                    *
+                                                                    */
+                                                       }
+                                         }
+                           }else{//si jugador eligio ser negro
+                                         if(turno=='1')//si jugador elijio empezar primero
+                                         {
+                                                       while (1)
+                                                       {
+                                                                    printf("juega:%s\n",nombre);
+                                                                    ValorUsuarioFicha(NumUsuarioFicha,2); //esta invocacion es para que el usuario eliha que ficha quiere mover
+                                                                     ValorUsuarioLugar(NumUsuarioJugada,2,NumUsuarioFicha[0],NumUsuarioFicha[1]);//esta invocacion es para que el usuario elija a donde quiere mover la ficha
+                                                                    victoria=victoriaNegro();
+                                                                    if (victoria!=0)
+                                                                    {
+                                                                                  printf("VICTORIA DE %s", nombre);
+                                                                                  break;
+                                                                    }
+                                                                    printf("juega: maquina\n");
+                                                                    ValorMaquina(NumMaquinaFicha,1); //esta invocacion es para que la maquina elija que ficha quiere mover
+                                                                     ValorUsuarioLugar(NumUsuarioJugada,2,NumUsuarioFicha[0],NumUsuarioFicha[1]);//esta invocacion es para que el usuario elija a donde quiere mover la ficha
+                                                                    victoria=victoriaBlanco();
+                                                                    if (victoria!=0)
+                                                                    {
+                                                                                  printf("VICTORIA DE LA MAQUINA");
+                                                                                  break;
+                                                                    }
+                                                                    /*
+                                                                    * valormaquina-----a esta parte le falta la funcion que verifique que es una jugada valida
+                                                                    * valorusuario-----a esta perte le falta la funcion que verifique que es una jugada valida
+                                                                    *
+                                                                    * en ambos casos tambien hace falta que la funcion verifique si es que se realiza o no un salto
+                                                                    *
+                                                                    */
+                                                       }
+                                                       }else{//si jugador elijio empezar segundo
+                                                       while (1)
+                                                       {
+                                                                    printf("juega: maquina\n");
+                                                                    ValorMaquina(NumMaquinaFicha,1);//esta invocacion es para que la maquina elija que ficha quiere mover
+                                                                    ValorMaquina(NumMaquinaJugada,1);//esta invocacion es para que la maquina elija a donde quiere mover la ficha
+                                                                    victoria=victoriaBlanco();
+                                                                    if (victoria!=0)
+                                                                    {
+                                                                                  printf("VICTORIA DE LA MAQUINA");
+                                                                                  break;
+                                                                    }
+                                                                    printf("juega:%s\n",nombre);
+                                                                    ValorUsuarioFicha(NumUsuarioFicha,2);//esta invocacion es para que el usuario eliha que ficha quiere mover
+                                                                     ValorUsuarioLugar(NumUsuarioJugada,2,NumUsuarioFicha[0],NumUsuarioFicha[1]);//esta invocacion es para que el usuario elija a donde quiere mover la ficha
+                                                                    victoria=victoriaNegro();
+                                                                    if (victoria!=0)
+                                                                    {
+                                                                                  printf("VICTORIA DE %s", nombre);
+                                                                                  break;
+                                                                    }
+                                                                    /*
+                                                                    * valormaquina-----a esta parte le falta la funcion que verifique que es una jugada valida
+                                                                    * valorusuario-----a esta perte le falta la funcion que verifique que es una jugada valida
+                                                                    *
+                                                                    * en ambos casos tambien hace falta que la funcion verifique si es que se realiza o no un salto
+                                                                    *
+                                                                    */
+                                                       }
+                                                       break;
+                                         }
+                           }
+              }
+}
+
+/*
+* funcion para generar dos numeros aleatorios
+* sirve para que la maquina puede elegir que ficha mover y tambien servira para determinar a donde la quiere mover
+*/
+
+int ValorMaquina(int *valores)
+{
+              int x;
+              int y;
+              x=rand()%16;
+              y=rand()%16;
+              valores[0]=x;
+              valores[1]=y;
+              return 0;
+}
+
+/*
+* esta funcion recoje los datos de posicion de la ficha que desea mover el usuario
+* no se encarga de revisar si la ficha existe o no en dicho lugar, simplemente se encarga de
+* recivir la posicion en cuestion.
+*/
+
+int ValorUsuarioFicha(int *valores,int player)
+{
+              int x=-1;
+              int y=-1;
+              do{
+                           x=-1;
+                           y=-1;
+        while (x<0 || x>15)
+        {
+              printf("ingrese la posición en x para la ficha que desea mover: ");
+            scanf("%d", &x);
+            while (getchar() != '\n');
+        }
+        while (y<0 || y>15)
+        {
+              printf("ingrese la posición en y para la ficha que desea mover: ");
+            scanf("%d", &y);
+            while (getchar() != '\n');
+        }
+              }while(((verificar_alrederores(x,y,player))!=1)&&(verificar_saltos(x,y,player)!=2));
+        valores[0]=x;
+        valores[1]=y;
+        return 0;
+}
+/*
+* mediante esta funcion el usuario ingresa la posicion a la que quiere mover la ficha
+* se verifica los valores que ingresa a modo que los mismos sean valores posibles dentro del tablero
+*/
+
+int ValorUsuarioLugar(int *valores,int player,int fichai, int fichaj)
+{
+              valores[0]=-1;
+              valores[1]=-1;
+   while(1)
+   {
+              do{
+                                                       while (valores[0]<0 || valores[0]>15)
+                                                       {
+                           printf("ingrese la posición en x a donde desea mover la ficha: ");
+                           scanf("%d", &valores[0]);
+                           cleanBuffer();
+                                                       }
+                                                       while (valores[1]<0 || valores[1]>15)
+                           {
+                           printf("ingrese la posición en y a donde desea mover la ficha: ");
+                           scanf("%d", &valores[1]);
+                           cleanBuffer();
+                           }
+    }while((verificar_almov(fichai,fichaj,valores[0],valores[1], player)!=1) && (verificar_salmov(fichai,fichaj,valores[0],valores[1], player)!=2));
+              if (verificar_almov(fichai,fichaj,valores[0],valores[1],player)==1)
+              {
+                           break;
+              }
+    if (verificar_salmov(fichai,fichaj,valores[0],valores[1],player)==2)
+    {
+              /*
+               * se realizó un salto
+               */
+              if(com_2do_sal(fichai, fichaj, valores[0],valores[1], player)==1)
+              {
+                  imprimirTablero();
+                           return 0;
+              }
+    }
+   }
+    imprimirTablero();
+    return 0;
+}
+
+int verificar_alrederores(int fichai,int fichaj, int usu)
+{
+    if (usu==1){ // si el usuario es 1 significa que juega con las blancas
+        //verifica si hay casillas vacias disponibles
+        if(tablero[fichai][fichaj] == 'B'){ //verifica que la pieza sea blanca
+            if ((fichai+1 < 16 && tablero[fichai+1][fichaj]=='-')
+            || (fichaj-1 >= 0 && tablero[fichai][fichaj-1]=='-')
+            || (fichaj+1 < 16 && tablero[fichai][fichaj+1]=='-')
+            || (fichai-1 >= 0 && tablero[fichai-1][fichaj]=='-')
+            || (fichai-1 >= 0 && fichaj-1 >= 0 && tablero[fichai-1][fichaj-1]=='-')
+            || (fichai-1 >= 0 && fichaj+1 < 16 && tablero[fichai-1][fichaj+1]=='-')
+            || (fichai+1 < 16 && fichaj-1 >= 0 && tablero[fichai+1][fichaj-1]=='-')
+            || (fichai+1 < 16 && fichaj+1 < 16 && tablero[fichai+1][fichaj+1]=='-')){
+                return 1;
+            }
+        }
+    }
+    if (usu==2){
+        if(tablero[fichai][fichaj] == 'N'){ //verifica que la pieza sea negra
+            if ((fichai+1 < 16 && tablero[fichai+1][fichaj]=='-')
+            || (fichaj-1 >= 0 && tablero[fichai][fichaj-1]=='-')
+            || (fichaj+1 < 16 && tablero[fichai][fichaj+1]=='-')
+            || (fichai-1 >= 0 && tablero[fichai-1][fichaj]=='-')
+            || (fichai-1 >= 0 && fichaj-1 >= 0 && tablero[fichai-1][fichaj-1]=='-')
+            || (fichai-1 >= 0 && fichaj+1 < 16 && tablero[fichai-1][fichaj+1]=='-')
+            || (fichai+1 < 16 && fichaj-1 >= 0 && tablero[fichai+1][fichaj-1]=='-')
+            || (fichai+1 < 16 && fichaj+1 < 16 && tablero[fichai+1][fichaj+1]=='-')){
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
+int verificar_saltos(int fichai, int fichaj,int usu){
+
+        //recorre el tablero
+                if (usu==1){ //su el usuario es 1 significa que juega con las blanca
+                    if(tablero[fichai][fichaj] == 'B'){ //verifica que la pieza sea blanca
+                        if ((tablero[fichai+1][fichaj] != '-' && tablero[fichai+2][fichaj]=='-') || (tablero[fichai][fichaj-1]!= '-' && tablero[fichai][fichaj-2]=='-')
+                        || (tablero[fichai][fichaj+1]!= '-' && tablero[fichai][fichaj+2]=='-') || (tablero[fichai-1][fichaj]!= '-' && tablero[fichai-2][fichaj]=='-')
+                        || (tablero[fichai-1][fichaj-1]!= '-' && tablero[fichai-1][fichaj+1]!= '-') || (tablero[fichai+1][fichaj-1]!= '-' && tablero[fichai+1][fichaj+1]== '-')
+                        || (tablero[fichai-2][fichaj-2]!='-' && tablero[fichai-2][fichaj+2]=='-') || (tablero[fichai+2][fichaj-2]!='-' && tablero[fichai+2][fichaj+2]=='-'))
+                        {
+                            return 1;
+                        }
+                    }
+                }
+                if (usu==0){  //su el usuario es 0 significa que juega con las negras
+                    if(tablero[fichai][fichaj] == 'N'){ //verifica que la pieza sea blanca
+                        if ((tablero[fichai+1][fichaj] != '-' && tablero[fichai+2][fichaj]=='-') || (tablero[fichai][fichaj-1]!= '-' && tablero[fichai][fichaj-2]=='-')
+                        || (tablero[fichai][fichaj+1]!= '-' && tablero[fichai][fichaj+2]=='-') || (tablero[fichai-1][fichaj]!= '-' && tablero[fichai-2][fichaj]=='-')
+                        || (tablero[fichai-1][fichaj-1]!= '-' && tablero[fichai-1][fichaj+1]!= '-') || (tablero[fichai+1][fichaj-1]!= '-' && tablero[fichai+1][fichaj+1]== '-')
+                        || (tablero[fichai-2][fichaj-2]!='-' && tablero[fichai-2][fichaj+2]=='-') || (tablero[fichai+2][fichaj-2]!='-' && tablero[fichai+2][fichaj+2]=='-'))
+                        {
+
+                            return 1;
+                        }
+                    }
+                }
+        return 0;
+}
+
+int verificar_almov(int fichai,int fichaj,int movi,int movj, int usu){
+        if (usu==1){//si el usuario es 1 significa que juega con las blanca
+            //verifica si hay casillas vacias disponibles
+            if(tablero[fichai][fichaj] == 'B'){ //verifica que la pieza sea blanca
+                if (tablero[movi][movj]==tablero[fichai+1][fichaj] && tablero[fichai+1][fichaj]=='-'){
+                    tablero[movi][movj]='B';
+                    tablero[fichai][fichaj]='-';
+                    return 1;
+                }
+                if (tablero[movi][movj]==tablero[fichai][fichaj-1] && tablero[fichai][fichaj-1]=='-'){
+                    tablero[movi][movj]='B';
+                    tablero[fichai][fichaj]='-';
+                    return 1;
+                }
+                if (tablero[movi][movj]==tablero[fichai][fichaj+1] && tablero[fichai][fichaj+1]=='-'){
+                    tablero[movi][movj]='B';
+                    tablero[fichai][fichaj]='-';
+                    return 1;
+                }
+                if (tablero[movi][movj]==tablero[fichai-1][fichaj] && tablero[fichai-1][fichaj]=='-'){
+                    tablero[movi][movj]='B';
+                    tablero[fichai][fichaj]='-';
+                    return 1;
+                }
+                if (tablero[movi][movj]==tablero[fichai-1][fichaj-1] && tablero[fichai-1][fichaj-1]=='-'){
+                    tablero[movi][movj]='B';
+                    tablero[fichai][fichaj]='-';
+                    return 1;
+                }
+                if (tablero[movi][movj]==tablero[fichai-1][fichaj+1] && tablero[fichai-1][fichaj+1]=='-'){
+                    tablero[movi][movj]='B';
+                    tablero[fichai][fichaj]='-';
+                    return 1;
+                }
+                if (tablero[movi][movj]==tablero[fichai+1][fichaj-1] && tablero[fichai+1][fichaj-1]=='-'){
+                    tablero[movi][movj]='B';
+                    tablero[fichai][fichaj]='-';
+                    return 1;
+                }
+                if (tablero[movi][movj]==tablero[fichai+1][fichaj+1] && tablero[fichai+1][fichaj+1]=='-'){
+                    tablero[movi][movj]='B';
+                    tablero[fichai][fichaj]='-';
+                    return 1;
+                }else{
+                    return 0; //podriamos usar para ver si encontro o no una jugada y que pruebe con la funcion de salto
+                }
+            }
+        }
+        if (usu==2){
+            if(tablero[fichai][fichaj] == 'N'){ //verifica que la pieza sea blanca
+                if (tablero[movi][movj]==tablero[fichai+1][fichaj] && tablero[fichai+1][fichaj]=='-'){
+                    tablero[movi][movj]='N';
+                    tablero[fichai][fichaj]='-';
+                    return 1;
+                }
+                if (tablero[movi][movj]==tablero[fichai][fichaj-1] && tablero[fichai][fichaj-1]=='-'){
+                    tablero[movi][movj]='N';
+                    tablero[fichai][fichaj]='-';
+                    return 1;
+                }
+                if (tablero[movi][movj]==tablero[fichai][fichaj+1] && tablero[fichai][fichaj+1]=='-'){
+                    tablero[movi][movj]='N';
+                    tablero[fichai][fichaj]='-';
+                    return 1;
+                }
+                if (tablero[movi][movj]==tablero[fichai-1][fichaj] && tablero[fichai-1][fichaj]=='-'){
+                    tablero[movi][movj]='N';
+                    tablero[fichai][fichaj]='-';
+                    return 1;
+                }
+                if (tablero[movi][movj]==tablero[fichai-1][fichaj-1] && tablero[fichai-1][fichaj-1]=='-'){
+                    tablero[movi][movj]='N';
+                    tablero[fichai][fichaj]='-';
+                    return 1;
+                }
+                if (tablero[movi][movj]==tablero[fichai-1][fichaj+1] && tablero[fichai-1][fichaj+1]=='-'){
+                    tablero[movi][movj]='N';
+                    tablero[fichai][fichaj]='-';
+                    return 1;
+                }
+                if (tablero[movi][movj]==tablero[fichai+1][fichaj-1] && tablero[fichai+1][fichaj-1]=='-'){
+                    tablero[movi][movj]='N';
+                    tablero[fichai][fichaj]='-';
+                    return 1;
+                }
+                if (tablero[movi][movj]==tablero[fichai+1][fichaj+1] && tablero[fichai+1][fichaj+1]=='-'){
+                    tablero[movi][movj]='N';
+                    tablero[fichai][fichaj]='-';
+                    return 1;
+                }else{
+                    return 0; //podriamos usar para ver si encontro o no una jugada y que pruebe con la funcion de salto
+                }
+            }
+        }
+    return 0;
+}
+
+int verificar_salmov(int fichai,int fichaj,int movi,int movj, int usu)
+{
+    if (usu==1){ //su el usuario es 1 significa que juega con las blanca
+        if(tablero[fichai][fichaj] == 'B'){ //verifica que la pieza sea blanca
+            if ((tablero[fichai+1][fichaj] != '-' && tablero[fichai+2][fichaj]=='-')
+            && tablero[fichai+2][fichaj]==tablero[movi][movj]){
+                tablero[movi][movj]='B';
+                tablero[fichai][fichaj]='-';
+                return 2;
+            }
+            if (tablero[fichai][fichaj-1]!= '-' && tablero[fichai][fichaj-2]=='-'
+            && tablero[fichai][fichaj-2]==tablero[movi][movj]){
+                tablero[movi][movj]='B';
+                tablero[fichai][fichaj]='-';
+                return 2;
+            }
+            if (tablero[fichai][fichaj+1]!= '-' && tablero[fichai][fichaj+2]=='-'
+            && tablero[fichai][fichaj+2]==tablero[movi][movj]){
+                tablero[movi][movj]='B';
+                tablero[fichai][fichaj]='-';
+                return 2;
+            }
+            if (tablero[fichai-1][fichaj]!= '-' && tablero[fichai-2][fichaj]=='-'
+            && tablero[fichai-2][fichaj]==tablero[movi][movj]){
+                tablero[movi][movj]='B';
+                tablero[fichai][fichaj]='-';
+                return 2;
+            }
+            if (tablero[fichai-1][fichaj-1]!= '-' && tablero[fichai-1][fichaj+1]== '-'
+            && tablero[fichai-1][fichaj+1]==tablero[movi][movj]){
+                tablero[movi][movj]='B';
+                tablero[fichai][fichaj]='-';
+                return 2;
+            }
+            if (tablero[fichai+1][fichaj-1]!= '-' && tablero[fichai+1][fichaj+1]== '-'
+            && tablero[fichai+1][fichaj+1]==tablero[movi][movj]){
+                tablero[movi][movj]='B';
+                tablero[fichai][fichaj]='-';
+                return 2;
+            }
+            if (tablero[fichai-2][fichaj-2]!='-' && tablero[fichai-2][fichaj+2]=='-'
+            && tablero[fichai-2][fichaj+2]==tablero[movi][movj]){
+                tablero[movi][movj]='B';
+                tablero[fichai][fichaj]='-';
+                return 2;
+            }
+            if (tablero[fichai+2][fichaj-2]!='-' && tablero[fichai+2][fichaj+2]=='-'
+            && tablero[fichai+2][fichaj+2]==tablero[movi][movj]){
+                tablero[movi][movj]='B';
+                tablero[fichai][fichaj]='-';
+                return 2;
+            }
+        }
+    }
+    if (usu==2){  //su el usuario es 0 significa que juega con las negras
+        if(tablero[fichai][fichaj] == 'N'){ //verifica que la pieza sea blanca
+            if ((tablero[fichai+1][fichaj] != '-' && tablero[fichai+2][fichaj]=='-')
+            && tablero[fichai+2][fichaj]==tablero[movi][movj]){
+                tablero[movi][movj]='N';
+                tablero[fichai][fichaj]='-';
+                return 2;
+            }
+            if (tablero[fichai][fichaj-1]!= '-' && tablero[fichai][fichaj-2]=='-'
+            && tablero[fichai][fichaj-2]==tablero[movi][movj]){
+                tablero[movi][movj]='N';
+                tablero[fichai][fichaj]='-';
+                return 2;
+            }
+            if (tablero[fichai][fichaj+1]!= '-' && tablero[fichai][fichaj+2]=='-'
+            && tablero[fichai][fichaj+2]==tablero[movi][movj]){
+                tablero[movi][movj]='N';
+                tablero[fichai][fichaj]='-';
+                return 2;
+            }
+            if (tablero[fichai-1][fichaj]!= '-' && tablero[fichai-2][fichaj]=='-'
+            && tablero[fichai-2][fichaj]==tablero[movi][movj]){
+                tablero[movi][movj]='N';
+                tablero[fichai][fichaj]='-';
+                return 2;
+            }
+            if (tablero[fichai-1][fichaj-1]!= '-' && tablero[fichai-1][fichaj+1]== '-'
+            && tablero[fichai-1][fichaj+1]==tablero[movi][movj]){
+                tablero[movi][movj]='N';
+                tablero[fichai][fichaj]='-';
+               return 2;
+            }
+            if (tablero[fichai+1][fichaj-1]!= '-' && tablero[fichai+1][fichaj+1]== '-'
+            && tablero[fichai+1][fichaj+1]==tablero[movi][movj]){
+                tablero[movi][movj]='N';
+                tablero[fichai][fichaj]='-';
+                return 2;
+            }
+            if (tablero[fichai-2][fichaj-2]!='-' && tablero[fichai-2][fichaj+2]=='-'
+            && tablero[fichai-2][fichaj+2]==tablero[movi][movj]){
+                tablero[movi][movj]='N';
+                tablero[fichai][fichaj]='-';
+                return 2;
+            }
+            if (tablero[fichai+2][fichaj-2]!='-' && tablero[fichai+2][fichaj+2]=='-'
+            && tablero[fichai+2][fichaj+2]==tablero[movi][movj]){
+                tablero[movi][movj]='N';
+                tablero[fichai][fichaj]='-';
+                return 2;
+            }
+        }
+    }
+    return 0;
+}
+/*
+*
+*/
+int victoriaBlanco()
+{
+              int cont=0;
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 3 - i; j++) {
+            if (tablero[i][j]== 'B'){
+                cont+=1;
+            }
+        }
+    }
+              if (tablero[1][4]=='N')
+              {
+                           cont+=1;
+              }
+              if (tablero[2][3]=='N')
+              {
+                           cont+=1;
+              }
+              if (tablero[3][2]=='N')
+              {
+                           cont+=1;
+              }
+              if (tablero[4][1]=='N')
+              {
+                           cont+=1;
+              }
+    if (cont==19)
+    {
+              return 1;
+    }
+    return 0;
+}
+
+int victoriaNegro()
+{
+              int cont=0;
+              for (int i=11;i<16;i++)
+              {
+                           for(int j=15;j>11;j--)
+                           {
+                                         if (tablero[i][j])
+                                         {
+                                                       cont+=1;
+                                         }
+                            }
+              }
+              if (tablero[11][14]=='N')
+              {
+                           cont+=1;
+              }
+              if (tablero[12][13]=='N')
+              {
+                           cont+=1;
+              }
+              if (tablero[13][12]=='N')
+              {
+                           cont+=1;
+              }
+              if (tablero[14][11]=='N')
+              {
+                           cont+=1;
+              }
+              if (cont==19)
+              {
+                           return 1;
+              }
+              return 0;
+}
+
+int com_2do_sal(int fichai, int fichaj, int movi, int movj, int usu)
+{
+    if (usu==1){ //su el usuario es 1 significa que juega con las blanca
+        if (tablero[movi][movj] == 'B'){ //verifica que la pieza sea blanca
+            if ( tablero[movi][movj] != tablero[fichai][fichaj] &&
+            ((tablero[movi+1][movj] != '-' && tablero[movi+2][movj]=='-')
+            || (tablero[movi][movj-1]!= '-' && tablero[movi][movj-2]=='-')
+            || (tablero[movi][movj+1]!= '-' && tablero[movi][movj+2]=='-')
+           || (tablero[movi-1][movj]!= '-' && tablero[movi-2][movj]=='-')
+            || (tablero[movi-1][movj-1]!= '-' && tablero[movi-1][movj+1]!= '-')
+            || (tablero[movi+1][movj-1]!= '-' && tablero[movi+1][movj+1]== '-')
+            || (tablero[movi-2][movj-2]!='-' && tablero[movi-2][movj+2]=='-')
+            || (tablero[movi+2][movj-2]!='-' && tablero[movi+2][movj+2]=='-'))){
+                if (tablero[fichai][fichaj] == 'B'){ //verifica que la pieza sea blanca
+                    if (tablero[fichai+1][fichaj] != '-' && tablero[fichai+2][fichaj]=='-'){
+                        tablero[movi][movj]='B';
+                        tablero[fichai][fichaj]='-';
+                        fichai=movi;
+                        fichaj=movj;
+                        return 1;
+                    }
+                    if (tablero[fichai][fichaj-1]!= '-' && tablero[fichai][fichaj-2]=='-'){
+                        tablero[movi][movj]='B';
+                        tablero[fichai][fichaj]='-';
+                        fichai=movi;
+                        fichaj=movj;
+                        return 1;
+                    }
+                    if (tablero[fichai][fichaj+1]!= '-' && tablero[fichai][fichaj+2]=='-'){
+                        tablero[movi][movj]='B';
+                        tablero[fichai][fichaj]='-';
+                        fichai=movi;
+                        fichaj=movj;
+                        return 1;
+                    }
+                    if (tablero[fichai-1][fichaj]!= '-' && tablero[fichai-2][fichaj]=='-'){
+                        tablero[movi][movj]='B';
+                        tablero[fichai][fichaj]='-';
+                        fichai=movi;
+                        fichaj=movj;
+                        return 1;
+                    }
+                    if (tablero[fichai-1][fichaj-1]!= '-' && tablero[fichai-1][fichaj+1]== '-'){
+                        tablero[movi][movj]='B';
+                        tablero[fichai][fichaj]='-';
+                        fichai=movi;
+                        fichaj=movj;
+                        return 1;
+                    }
+                    if (tablero[fichai+1][fichaj-1]!= '-' && tablero[fichai+1][fichaj+1]== '-'){
+                        tablero[movi][movj]='B';
+                        tablero[fichai][fichaj]='-';
+                        fichai=movi;
+                        fichaj=movj;
+                        return 1;
+                    }
+                    if (tablero[fichai-2][fichaj-2]!='-' && tablero[fichai-2][fichaj+2]=='-'){
+                        tablero[movi][movj]='B';
+                        tablero[fichai][fichaj]='-';
+                        fichai=movi;
+                        fichaj=movj;
+                        return 1;
+                    }
+                    if (tablero[fichai+2][fichaj-2]!='-' && tablero[fichai+2][fichaj+2]=='-'){
+                        tablero[movi][movj]='B';
+                        tablero[fichai][fichaj]='-';
+                        fichai=movi;
+                        fichaj=movj;
+                        return 1;
+                    }
+                }
+            }
+        }else{
+            return 0;
+        }
+    }
+    if (usu==0){  //su el usuario es 0 significa que juega con las negras
+        if(tablero[movi][movj] == 'B'){ //verifica que la pieza sea blanca
+            if ( tablero[movi][movj] != tablero[fichai][fichaj] &&
+            ((tablero[movi+1][movj] != '-' && tablero[movi+2][movj]=='-')
+            || (tablero[movi][movj-1]!= '-' && tablero[movi][movj-2]=='-')
+            || (tablero[movi][movj+1]!= '-' && tablero[movi][movj+2]=='-')
+            || (tablero[movi-1][movj]!= '-' && tablero[movi-2][movj]=='-')
+            || (tablero[movi-1][movj-1]!= '-' && tablero[movi-1][movj+1]!= '-')
+            || (tablero[movi+1][movj-1]!= '-' && tablero[movi+1][movj+1]== '-')
+            || (tablero[movi-2][movj-2]!='-' && tablero[movi-2][movj+2]=='-')
+            || (tablero[movi+2][movj-2]!='-' && tablero[movi+2][movj+2]=='-'))){
+                if(tablero[fichai][fichaj] == 'N'){ //verifica que la pieza sea blanca
+                    if (tablero[fichai+1][fichaj] != '-' && tablero[fichai+2][fichaj]=='-'){
+                        tablero[movi][movj]='N';
+                        tablero[fichai][fichaj]='-';
+                        fichai=movi;
+                        fichaj=movj;
+                        return 1;
+                    }
+                    if (tablero[fichai][fichaj-1]!= '-' && tablero[fichai][fichaj-2]=='-'){
+                        tablero[movi][movj]='N';
+                        tablero[fichai][fichaj]='-';
+                        fichai=movi;
+                        fichaj=movj;
+                        return 1;
+                    }
+                    if (tablero[fichai][fichaj+1]!= '-' && tablero[fichai][fichaj+2]=='-'){
+                        tablero[movi][movj]='N';
+                        tablero[fichai][fichaj]='-';
+                        fichai=movi;
+                        fichaj=movj;
+                        return 1;
+                    }
+                    if (tablero[fichai-1][fichaj]!= '-' && tablero[fichai-2][fichaj]=='-'){
+                        tablero[movi][movj]='N';
+                        tablero[fichai][fichaj]='-';
+                        fichai=movi;
+                        fichaj=movj;
+                        return 1;
+                    }
+                    if (tablero[fichai-1][fichaj-1]!= '-' && tablero[fichai-1][fichaj+1]== '-'){
+                        tablero[movi][movj]='N';
+                        tablero[fichai][fichaj]='-';
+                        fichai=movi;
+                        fichaj=movj;
+                        return 1;
+                    }
+                    if (tablero[fichai+1][fichaj-1]!= '-' && tablero[fichai+1][fichaj+1]== '-'){
+                        tablero[movi][movj]='N';
+                        tablero[fichai][fichaj]='-';
+                        fichai=movi;
+                        fichaj=movj;
+                        return 1;
+                    }
+                    if (tablero[fichai-2][fichaj-2]!='-' && tablero[fichai-2][fichaj+2]=='-'){
+                        tablero[movi][movj]='N';
+                        tablero[fichai][fichaj]='-';
+                        fichai=movi;
+                        fichaj=movj;
+                        return 1;
+                    }
+                    if (tablero[fichai+2][fichaj-2]!='-' && tablero[fichai+2][fichaj+2]=='-'){
+                        tablero[movi][movj]='N';
+                        tablero[fichai][fichaj]='-';
+                        fichai=movi;
+                        fichaj=movj;
+                        return 1;
+                    }
+                }
+            }
+        }else{
+            return 0;
+        }
+    }else{
+        return 0;
+    }
+    return 9;
+}
+
+int main()
+{
+    tableroInicial();
+    imprimirTablero();
+    char nombre[20] = "EZe";
+    char lado[2] = "1";
+    char turno[2]="1";
+    srand(time(NULL));
+    //UserData(nombre, lado, turno);//cargar datos para el juego
+
+    juegoPurete(nombre,lado[0],turno[0]);//el juego en si
+    //juego(nombre,lado[0],turno[0]);//el juego en si
+}
