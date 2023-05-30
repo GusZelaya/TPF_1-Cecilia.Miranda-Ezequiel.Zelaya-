@@ -227,6 +227,27 @@ void guardar_texto()
 	gtk_label_set_text(GTK_LABEL(NOMBREJUGADOR), Juego.username);
 }
 
+/*
+habilitar los botones 
+->imagen dentro del botón
+-->si pieza =pieza correcta
+--->habilitar movimiento
+--->si Movimiento correcto
+---->mover imagen a lugar nuevo 
+---->vaciar imagen lugar viejo
+--->si Movimiento incorrecto 
+----->label control=mov incorrecto
+----->nuevo mov 
+----->do hasta correcto
+-->si pieza incorrecta
+--->do hasta pieza correcta
+
+cada mov actualizar tablero
+crear matriz tablero 
+si atrás borrar tablero 
+*/
+
+
 int main (int argc, char *argv[])
  {
 	guint ret;
