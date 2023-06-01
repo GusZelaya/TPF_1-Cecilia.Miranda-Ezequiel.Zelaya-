@@ -132,7 +132,7 @@ void randomPC(coord* coordenada){
   coordenada->x=rand()%16;
   coordenada->y=rand()%16;
 }
-int isJumpable(int tablero[16][16],int coord[4]){
+int isJumpable(char tablero[16][16],int coord[4]){
     bool isValid = false;
     int diffI = (coord[2]-coord[0])/2;
     int diffJ = (coord[3]-coord[1])/2;
@@ -142,7 +142,7 @@ int isJumpable(int tablero[16][16],int coord[4]){
     isValid = (diffI == 0 && diffJ == 0)? false: isValid;
     return isValid;
 }
-int checkJugada(coord pcActual,coord pcSiguiente){
+int checkJugada(coord pcActual,coord pcSiguiente,int turno,int colorJugador,char* nombre){
     int coord[4] = {pcActual.x,pcActual.y,pcSiguiente.x,pcSiguiente.y};
     bool isValid = false;
     int absDiffI = abs(coord[0]-coord[2]);
@@ -154,8 +154,67 @@ int checkJugada(coord pcActual,coord pcSiguiente){
     if(absDiffI <= 1 && absDiffJ <= 1){
         isValid = (tablero[coord[2]][coord[3]] == '-')? true: false;
     }else{//es un salto
-        if((absDiffI == 2 && absDiffJ == 2) || (absDiffI == 0 && absDiffJ == 2) || (absDiffI == 2 && absDiffJ == 0) ){
+        if (turno==PERSONA){
+            int cont=0;
+            int salto;
+            int victoria = 0;
+            do
+            {
+                //si o si el primer salto pasa por aca
+                if(((absDiffI == 2 && absDiffJ == 2) || (absDiffI == 0 && absDiffJ == 2) || (absDiffI == 2 && absDiffJ == 0)) && cont==0){
+                    isValid = (tablero[coord[2]][coord[3]] != '-')? false: isJumpable(tablero,coord);
+                    cont++;
+                    pcActual=pcSiguiente;
+                    tablero[coord[0]][coord[1]] = '-';
+                    tablero[coord[2]][coord[3]] = (colorJugador = BLANCO?'B':'N');
+        			victoria=(colorJugador = BLANCO?victoriaBlanco():victoriaNegro());
+        			imprimirTablero();
+        			if (victoria!=0)
+                    {
+                        printf("VICTORIA DE %s", nombre);
+                        break;
+                    }
+                }else{
+                    if((absDiffI == 2 && absDiffJ == 2) || (absDiffI == 0 && absDiffJ == 2) || (absDiffI == 2 && absDiffJ == 0)){
+                        printf("Desea realizar otro salto? 1 --> Si, 2 --> No:\n");
+                        cleanBuffer();
+                        scanf ("%d",&salto);
+                        cleanBuffer();
+                        if (salto==1)//si desea realizar otro salto
+                        {
+                        //entre a la funcion de condicion de salto
+                            elegirCoord("Elija el proximo salto",&pcSiguiente);
+                            int coord[4] = {pcActual.x,pcActual.y,pcSiguiente.x,pcSiguiente.y};
+                            int absDiffI = abs(coord[0]-coord[2]);
+                            int absDiffJ = abs(coord[1]-coord[3]);
+                            isValid = (tablero[coord[2]][coord[3]] != '-')? false: isJumpable(tablero,coord);
+                            pcActual=pcSiguiente;
+                            tablero[coord[0]][coord[1]] = '-';
+                			tablero[coord[2]][coord[3]] = (colorJugador = BLANCO?'B':'N');
+                			victoria=(colorJugador = BLANCO?victoriaBlanco():victoriaNegro());
+                			imprimirTablero();
+                			if (victoria!=0)
+                			{
+                			  printf("VICTORIA DE %s", nombre);
+                			  break;
+                			}
+                        }
+                        if (salto == 2)
+                        {
+                        	return 1;
+                        	isValid = false;
+                        }else{
+                            printf("Valor invalido. Intenta nuevamente.\n");
+                        }
+                    }else{
+                        isValid = false;
+                    }
+                }
+            }while (isValid==true);
+        }else{//es un salto
+            if((absDiffI == 2 && absDiffJ == 2) || (absDiffI == 0 && absDiffJ == 2) || (absDiffI == 2 && absDiffJ == 0) ){
             isValid = (tablero[coord[2]][coord[3]] != '-')? false: isJumpable(tablero,coord);
+            }
         }
     }
     return isValid;
@@ -186,7 +245,7 @@ void juegoPurete(char *nombre,unsigned int colorJugador, unsigned int turno){
 				  elegirCoord("Elija la posicion inicial",&jugadorActual);
 				  elegirCoord("Elija la posicion a mover",&jugadorSiguiente);
 				  if(tablero[jugadorActual.x][jugadorActual.y] == (colorJugador = BLANCO?'B':'N'))
-					  bandera = checkJugada(jugadorActual,jugadorSiguiente);
+					  bandera = checkJugada(jugadorActual,jugadorSiguiente,turno,colorJugador, nombre);
 			}while(bandera == 0);
 			tablero[jugadorActual.x][jugadorActual.y] = '-';
 			tablero[jugadorSiguiente.x][jugadorSiguiente.y] = (colorJugador = BLANCO?'B':'N');
@@ -206,7 +265,7 @@ void juegoPurete(char *nombre,unsigned int colorJugador, unsigned int turno){
 			  pcActual.x = coinFlip(15);
 			  pcActual.y = coinFlip(15);
 			  if(tablero[pcActual.x][pcActual.y] == (colorJugador = NEGRO?'B':'N'))
-				  bandera =  checkJugada(pcActual,pcSiguiente);
+				  bandera =  checkJugada(pcActual,pcSiguiente,turno,colorJugador,nombre);
 			}while(bandera == 0);
 			tablero[pcActual.x][pcActual.y] = '-';
 			tablero[pcSiguiente.x][pcSiguiente.y] = (colorJugador = NEGRO?'B':'N');
@@ -308,57 +367,4 @@ int main()
     unsigned int colorJugador = lado[0] =='1'?NEGRO:BLANCO;
     unsigned int turnoInicial = turno[0] == '1'?PERSONA:PC;
     juegoPurete(nombre,colorJugador,turnoInicial);
-}
-
-
-
-
-/*
- ============================================================================
- Name        : Leerescribir.c
- Author      : ezequiel zelaya
- Version     :
- Copyright   : Your copyright notice
- Description : Hello World in C, Ansi-style
- ============================================================================
- */
-
-#include <stdio.h>
-#include <stdlib.h>
-
-#define direccion "/home/lp1-2023/Escritorio/csv nuevo.csv"
-
-void copiar (FILE *a, FILE *b)
-{
-int c,cont;
-char *filename=NULL;
-printf("ingrese la direccion del archivo a leer: \n");
-scanf("%s",filename);
-if ((b=fopen(direccion,"w"))==NULL)
-{
-	printf("error en archivo b\n");
-}
-if ((a=fopen(filename,"r"))==NULL)
-{
-	printf("error en archivo a\n");
-}else{
-	for (cont=0;(c=fgetc(a))!=EOF;cont++){}
-	if (c==',')
-	{
-		cont+=1;
-		while(cont>3 && cont<5)
-		{
-			fputc(c,b);
-		}
-	}
-	}
-fclose(a);
-fclose(b);
-}
-
-int main()
-{
-FILE *a=NULL;
-FILE *b=NULL;
-copiar(a,b);
 }
