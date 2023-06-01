@@ -18,18 +18,30 @@
 #define neutral 00
 #define pVm 1
 #define mVm 0
+#define PuntoNegro "/home/lp1-2023/eclipse_workspace/Hoppiti_interfaz_tpf/src/utilizades/PuntoNegro.jpg"
+#define PuntoRojo "/home/lp1-2023/eclipse_workspace/Hoppiti_interfaz_tpf/src/utilizades/PuntoRojo.jpg"
+#define ErrorFicha  "Selecciona una ficha de tu equipo"
+#define ErrorMovimiento "Movimiento seleccionado inválido"
 
-
+//
 //widgets de utilidad
 GtkBuilder * builder;
 gchar * filename;
-
+gint i,j;
+char tablero [16][16];
 struct config{
 	gchar   UserSide;
 	gchar 	MachineSide;
 	gchar 	mod;
 	gchar 	username[20];
 };
+
+typedef struct coord{
+  int x;
+  int y;
+}coord;
+coord pcActual;
+coord pcSiguiente;
 
 typedef struct config datosJuego;
 datosJuego Juego;
@@ -64,7 +76,8 @@ GtkWidget * NOMBREJUGADOR;
 GtkWidget * TURNO;
 GtkWidget * PUNTOSPLAYER;
 GtkWidget * PUNTOSMAQUINA;
-GtkWidget * GrillaJuego;
+GtkWidget * GridJuego;
+GtkWidget * EventBox;
 
 //widgets de VentanaStats
 GtkWidget * VentanaStats;
@@ -110,6 +123,22 @@ char* copy_file_to_string(const char* filename) {
     return str;
 }
 
+void tableroInicial(){
+    int i,j;
+    for(i = 0;i<16;i++ ){
+        for(j=0;j<16;j++){
+            tablero[i][j] = '-';
+            // está en el medio
+            if((i==0 && j<5)|| (i==1 && j<5) || (i==2 && j<4) || (i==3 && j<3) || (i==4 && j<2) ){ //Posiciona las fichas Negras
+        tablero[i][j] = 'R';
+      }
+      if((i==11 && j>13) || (i==12 && j>12) || (i==13 && j>11) || (i==14 && j>10) || (i==15 && j>10) ){ //Posiciona las fichas Blancas
+        tablero[i][j] = 'N';
+      }
+    }
+  }
+}
+
 void SetMode (int data)
 {
 	if(data==(int)pVm)
@@ -120,25 +149,25 @@ void SetMode (int data)
 	}
 }
 //
-void SetSide(GtkWidget event_box, GdkEventButton *event, gpointer data)
+void SetSide(GtkWidget *event_box, GdkEventButton *event, gpointer data)
 {
-	if(data==(int)usa)
+	if(data==usa)
 	{
 		Juego.UserSide='n';
-		Juego.MachineSide='b';
-	}else if(data==(int)rusia){
-		Juego.UserSide='b';
+		Juego.MachineSide='r';
+	}else if(data==rusia){
+		Juego.UserSide='r';
 		Juego.MachineSide='n';
-	}else if(data==(int)neutral){
+	}else if(data==neutral){
 		srand(time(NULL));
 		int ban=(rand()%2);
 		if (ban==1)
 		{
-			Juego.UserSide='b';
+			Juego.UserSide='r';
 			Juego.MachineSide='n';
 		}else{
 			Juego.UserSide='n';
-			Juego.MachineSide='b';
+			Juego.MachineSide='r';
 		}
 	}
 }
@@ -153,7 +182,7 @@ void guardar(GtkFileChooserButton *button, gpointer user_data)
 }
 
 //funcion para confirmar que quiere abrir el archivo seleccionado
-void mostrar(GtkWidget event_box, GdkEventButton *event, gpointer data)
+void mostrar(GtkWidget *event_box, GdkEventButton *event, gpointer data)
 {
 	   int c,cont;
 	    FILE *a;
@@ -162,13 +191,11 @@ void mostrar(GtkWidget event_box, GdkEventButton *event, gpointer data)
 	    	printf("error\n");
 	    }else{
 	    	for (cont=0;(c=fgetc(a))!=EOF;cont++){}
-	    	cont-=1;
-	    	printf("tamaño del archivo: %d \n",cont);
-	    	char* str = copy_file_to_string(filename);
+	    	printf("tamaño del archivo: %d \n",cont-1);
+	    	gchar * str = copy_file_to_string(filename);
 	    	    if (str != NULL) {
 	    	        printf("Contenido del archivo:\n%s\n", str);
-
-	    	        GtkTextBuffer* buffer = gtk_text_view_get_buffer(TextoStats);
+	    	        GtkTextBuffer * buffer = gtk_text_view_get_buffer(TextoStats);
 	    	        GtkTextIter end_iter;
 					gtk_text_buffer_get_end_iter(buffer, &end_iter);
 					gtk_text_buffer_insert(buffer, &end_iter, str, -1);
@@ -225,28 +252,41 @@ void guardar_texto()
     // Obtener el contenido del campo de entrada
 	strncpy(Juego.username, gtk_entry_get_text(GTK_ENTRY(PlayerName)), 19);
 	gtk_label_set_text(GTK_LABEL(NOMBREJUGADOR), Juego.username);
+	return;
 }
 
-/*
-habilitar los botones 
-->imagen dentro del botón
--->si pieza =pieza correcta
---->habilitar movimiento
---->si Movimiento correcto
----->mover imagen a lugar nuevo 
----->vaciar imagen lugar viejo
---->si Movimiento incorrecto 
------>label control=mov incorrecto
------>nuevo mov 
------>do hasta correcto
--->si pieza incorrecta
---->do hasta pieza correcta
-
-cada mov actualizar tablero
-crear matriz tablero 
-si atrás borrar tablero 
-*/
-
+void ClickGrilla (GtkWidget *event_box, GdkEventButton *event, gpointer data)
+{
+	if((Juego.UserSide)=='n')
+	{
+		i = (GUINT_FROM_LE(event->y) / 20); // 20 =20 px
+		j = (GUINT_FROM_LE(event->x) / 20);
+		pcActual.x=i;
+		pcActual.y=j;
+		if(tablero[i][j]=='N')
+		{
+			gtk_label_set_text(GTK_LABEL(LabeldeControl), "");
+			gtk_image_set_from_file(GTK_IMAGE(gtk_grid_get_child_at(GTK_GRID(GridJuego),j,i)),PuntoNegro);
+		}else{
+			gtk_label_set_text(GTK_LABEL(LabeldeControl), ErrorFicha);
+		}
+		if((Juego.UserSide)=='r')
+		{
+			i = (GUINT_FROM_LE(event->y) / 20); // 20 = espaciado (5) + 20 px
+			j = (GUINT_FROM_LE(event->x) / 20);
+			pcActual.x=i;
+			pcActual.y=j;
+		if(tablero[i][j]=='R')
+		{
+			gtk_label_set_text(GTK_LABEL(LabeldeControl), "");
+			gtk_image_set_from_file(GTK_IMAGE(gtk_grid_get_child_at(GTK_GRID(GridJuego),j,i)),PuntoRojo);
+		}else{
+			gtk_label_set_text(GTK_LABEL(LabeldeControl), ErrorFicha);
+		}
+		//gtk_image_set_from_file(GTK_IMAGE(gtk_grid_get_child_at(GTK_GRID(GridJuego),j,i)), PuntoNegro);
+		}
+	}
+}
 
 int main (int argc, char *argv[])
  {
@@ -262,6 +302,8 @@ int main (int argc, char *argv[])
 			g_print("Error en la función gtk_builder_add_from_file:\n%s", error->message);
 			return 1;
 		}
+	//utilidad
+	tableroInicial();
 	//asignación de ventanas
 	VentanaInicio = GTK_WIDGET(gtk_builder_get_object(builder,"VentanaInicio"));
 	VentanaAyuda  = GTK_WIDGET(gtk_builder_get_object(builder,"VentanaAyuda"));
@@ -317,8 +359,9 @@ int main (int argc, char *argv[])
 	TURNO		= GTK_WIDGET(gtk_builder_get_object(builder,"TURNO"));
 
 	//Grilla
-	GrillaJuego = GTK_WIDGET(gtk_builder_get_object(builder,"GrillaJuego"));
-
+	EventBox	= GTK_WIDGET(gtk_builder_get_object(builder,"EventBox"));
+	g_signal_connect (EventBox,"button-press-event",G_CALLBACK(ClickGrilla),NULL);
+	GridJuego	= GTK_WIDGET(gtk_builder_get_object(builder,"GridJuego"));
 	//ventana estadisticas
 	ChooserStats= GTK_WIDGET(gtk_builder_get_object(builder, "ChooserStats"));
 	BotonStats  = GTK_WIDGET(gtk_builder_get_object (builder,"BotonStats"));
