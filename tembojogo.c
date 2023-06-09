@@ -7,6 +7,10 @@
 
 //defines chetos
 #define direccion "/home/lp1-2023/eclipse_workspace/Tembojogo/src/interfazHoppitypurete.glade"
+#define PuntoNegro "/home/lp1-2023/eclipse_workspace/Tembojogo/src/utilizades/PuntoNegro.png"
+#define PuntoRojo "/home/lp1-2023/eclipse_workspace/Tembojogo/src/utilizades/PuntoRojo.png"
+#define EspacioBlanco "/home/lp1-2023/eclipse_workspace/Tembojogo/src/utilizades/EspacioBlanco.jpeg"
+#define RutaEstadisticas "/home/lp1-2023/eclipse_workspace/Tembojogo/src/Estadisticas"
 #define inicioabando1 0
 #define inicioabando2 12
 #define bandoajuego 1
@@ -20,10 +24,9 @@
 #define usa 99
 #define pVm 1
 #define mVm 0
-#define PuntoNegro "/home/lp1-2023/eclipse_workspace/Tembojogo/src/utilizades/PuntoNegro.png"
-#define PuntoRojo "/home/lp1-2023/eclipse_workspace/Tembojogo/src/utilizades/PuntoRojo.png"
 #define ErrorFicha  "Selecciona una ficha de tu equipo"
 #define ErrorMovimiento "Movimiento seleccionado inválido"
+#define FormatoEstadisticas "_%s/%d/%d/%d"//nombre, jugadas, ganadas, perdidas
 #define PERSONA 1
 #define PC 0
 #define NEGRO 0
@@ -35,19 +38,22 @@
 #define si 11
 #define no 22
 
-//
-//widgets de utilidad
+//utilidad
 GtkBuilder * builder;
 gchar * filename;
-gint i,j;
+gchar	EncabezadoEstadiscas[]={"                                    Estadisticas"};
+gchar	StrControlEstadisticas[70];
+gint 	i,j;
+FILE  * Estadisticas;
+gint	victoria=1;
 
 char tablero [16][16];
+
 struct config{
 	gchar   UserSide;
 	gchar 	MachineSide;
 	gchar 	mod;
 	gchar 	username[20];
-	gint	turno;
 	gchar   UserTurn;
 	gchar   MachineTurn;
 };
@@ -61,6 +67,13 @@ typedef struct coord{
 }coord;
 coord pcActual;
 coord pcSiguiente;
+
+typedef struct estadisticasJugador
+{
+	int ganadas;
+	int perdidas;
+	int totales;
+}StructEstadisticas;
 
 //widgets de las ventanas
 
@@ -170,15 +183,26 @@ void tableroInicial(){
   }
 }
 
-void SetTurn(GtkWidget event_box, GdkEventButton *event, gpointer data)
+void SetTurn(GtkWidget *event_box, GdkEventButton *event, gpointer data)
 {
-	if(data==(int)Loc)//Si selecciona Local
+	char bandera=0;
+	if(data==Loc)//Si selecciona Local
 	{
 		Juego.UserTurn='0';//Si inicia usuario retorna 0
 		Juego.MachineTurn='1';//Si incia Maquina retorna 1
 	}else if(data==(int)Mac){//Si selecciona que incia maquina
 		Juego.UserTurn='1';//User 1
 		Juego.MachineTurn='0';//maquina0
+		do{
+		  pcSiguiente.x = coinFlip(15);
+		  pcSiguiente.y = coinFlip(15);
+		  pcActual.x = coinFlip(15);
+		  pcActual.y = coinFlip(15);
+		  if(tablero[pcActual.x][pcActual.y] == Juego.MachineSide)
+		  {
+			  bandera =  checkJugada(pcActual,pcSiguiente,Juego.MachineTurn);
+		  }
+		}while(bandera==0);
 	}else if(data==(int)Al){//Si selecciona aleaotorio
 		srand(time(NULL));
 		int ban=(rand()%2);
@@ -186,11 +210,28 @@ void SetTurn(GtkWidget event_box, GdkEventButton *event, gpointer data)
 		{
 			Juego.UserTurn='1';
 			Juego.MachineTurn='0';
+			do{
+			  pcSiguiente.x = coinFlip(15);
+			  pcSiguiente.y = coinFlip(15);
+			  pcActual.x = coinFlip(15);
+			  pcActual.y = coinFlip(15);
+			  if(tablero[pcActual.x][pcActual.y] == Juego.MachineSide)
+			  {
+				  bandera =  checkJugada(pcActual,pcSiguiente,Juego.MachineTurn);
+			  }
+			}while(bandera == 0);
 		}else{
 			Juego.UserTurn='0';
 			Juego.MachineTurn='1';
 		}
 	}
+}
+
+char * nombres()
+{
+	static char str[700];
+	//sprintf (str,FormatoEstadisticas,Juego.username,n);
+	return(str);
 }
 
 void SetMode (int data)
@@ -207,13 +248,13 @@ void SetSide(GtkWidget *event_box, GdkEventButton *event, gpointer data)
 {
 	if(data==((int)usa))
 	{
-		Juego.UserSide='n';
+		Juego.UserSide='N';
 		printf("h");
-		Juego.MachineSide='r';
+		Juego.MachineSide='R';
 	}
 	else if(data==(int)rusia){
-		Juego.UserSide='r';
-		Juego.MachineSide='n';
+		Juego.UserSide='N';
+		Juego.MachineSide='R';
 		printf("3");
 	}
 	else if(data==(int)neutral){
@@ -221,11 +262,11 @@ void SetSide(GtkWidget *event_box, GdkEventButton *event, gpointer data)
 		int ban=(rand()%2);
 		if (ban==1)
 		{
-			Juego.UserSide='r';
-			Juego.MachineSide='n';
+			Juego.UserSide='R';
+			Juego.MachineSide='N';
 		}else{
-			Juego.UserSide='n';
-			Juego.MachineSide='r';
+			Juego.UserSide='N';
+			Juego.MachineSide='R';
 		}
 	}
 }
@@ -244,13 +285,13 @@ void mostrar(GtkWidget *event_box, GdkEventButton *event, gpointer data)
 {
 	   int c,cont;
 	    FILE *a;
-	    if ((a=fopen(filename,"r"))==NULL)
+	    if ((a=fopen(RutaEstadisticas,"r"))==NULL)
 	    {
 	    	printf("error\n");
 	    }else{
 	    	for (cont=0;(c=fgetc(a))!=EOF;cont++){}
 	    	printf("tamaño del archivo: %d \n",cont-1);
-	    	gchar * str = copy_file_to_string(filename);
+	    	gchar * str = copy_file_to_string(RutaEstadisticas);
 	    	    if (str != NULL)
 	    	    {
 	    	        printf("Contenido del archivo:\n%s\n", str);
@@ -305,18 +346,18 @@ void CambiarVen (GtkWidget *event_box, GdkEventButton *event, gpointer data)
 		break;
 	case(juegoabando):
 		gtk_widget_hide (VentanaJuego);
-		gtk_widget_show_all (VentanaBando);
+		gtk_widget_show_all (VentanaSalir);
 		break;
 	case(si):
-			gtk_widget_destroy(VentanaJuego);
-			gtk_widget_destroy(VentanaSalir);
-			gtk_widget_show_all (VentanaInicio);
-			break;
-		//EditJuego ayuda case no
-		case(no):
-			gtk_widget_hide (VentanaSalir);
-			gtk_widget_show_all (VentanaJuego);
-			break;
+		gtk_widget_destroy(VentanaJuego);
+		gtk_widget_destroy(VentanaSalir);
+		gtk_widget_show_all (VentanaInicio);
+		break;
+	//EditJuego ayuda case no
+	case(no):
+		gtk_widget_hide (VentanaSalir);
+		gtk_widget_show_all (VentanaJuego);
+		break;
 	}
 }
 
@@ -330,12 +371,13 @@ void guardar_texto()
 
 void ClickGrilla (GtkWidget *event_box, GdkEventButton *event, gpointer data)
 {
+	char bandera=0;
 	static int contador=0;
 	i = (GUINT_FROM_LE(event->y) / 20); // 20 =20 px
 	j = (GUINT_FROM_LE(event->x) / 20);
 	if (contador==0)
 	{
-		if((Juego.UserSide)=='n')
+		if((Juego.UserSide)=='N')
 		{
 			if(tablero[i][j]=='N')
 			{
@@ -343,12 +385,13 @@ void ClickGrilla (GtkWidget *event_box, GdkEventButton *event, gpointer data)
 				pcActual.x=i;
 				pcActual.y=j;
 				gtk_label_set_text(GTK_LABEL(LabeldeControl), " Ficha seleccionada\n elija a donde moverla");
-				//gtk_image_set_from_file(GTK_IMAGE(gtk_grid_get_child_at(GTK_GRID(GridJuego),j,i)),PuntoNegro);
+				gtk_image_set_from_file(GTK_IMAGE(gtk_grid_get_child_at(GTK_GRID(GridJuego),j,i)),EspacioBlanco);
+				imprimirTablero();
 			}else{
 				gtk_label_set_text(GTK_LABEL(LabeldeControl), ErrorFicha);
 			}
 		}
-		if((Juego.UserSide)=='r')
+		if((Juego.UserSide)=='R')
 		{
 			if (tablero[i][j]=='R')
 			{
@@ -356,40 +399,65 @@ void ClickGrilla (GtkWidget *event_box, GdkEventButton *event, gpointer data)
 				pcActual.x=i;
 				pcActual.y=j;
 				gtk_label_set_text(GTK_LABEL(LabeldeControl), " Ficha seleccianada\n elija a donde moverla");
-				//gtk_image_set_from_file(GTK_IMAGE(gtk_grid_get_child_at(GTK_GRID(GridJuego),j,i)),PuntoRojo);
+				gtk_image_set_from_file(GTK_IMAGE(gtk_grid_get_child_at(GTK_GRID(GridJuego),j,i)),EspacioBlanco);
+				imprimirTablero();
 			}else{
 				gtk_label_set_text(GTK_LABEL(LabeldeControl), ErrorFicha);
 			}
 		}
 	}else if (contador==1){
-		if((Juego.UserSide)=='n')
+		if((Juego.UserSide)=='N')
 		{
 			if(tablero[i][j]=='-')
 			{
 				pcSiguiente.x=i;
 				pcSiguiente.y=j;
-				gtk_label_set_text(GTK_LABEL(LabeldeControl), "movimiento valido");
-				gtk_image_set_from_file(GTK_IMAGE(gtk_grid_get_child_at(GTK_GRID(GridJuego),j,i)),PuntoNegro);
-
+				if(checkJugada(pcActual,pcSiguiente,Juego.UserTurn)==0)
+				{
+					gtk_label_set_text(GTK_LABEL(LabeldeControl), "movimiento valido");
+					gtk_image_set_from_file(GTK_IMAGE(gtk_grid_get_child_at(GTK_GRID(GridJuego),j,i)),PuntoNegro);
+					imprimirTablero();
+				}else{
+					gtk_label_set_text(GTK_LABEL(LabeldeControl), ErrorMovimiento);
+					contador=0;
+				}
 			}else{
 				gtk_label_set_text(GTK_LABEL(LabeldeControl), ErrorMovimiento);
-				contador--;
+				contador=0;
 			}
 		}
-		if((Juego.UserSide)=='r')
+		if((Juego.UserSide)=='R')
 		{
 			if (tablero[i][j]=='-')
 			{
 				pcSiguiente.x=i;
 				pcSiguiente.y=j;
-				gtk_label_set_text(GTK_LABEL(LabeldeControl), "movimiento valido");
-				gtk_image_set_from_file(GTK_IMAGE(gtk_grid_get_child_at(GTK_GRID(GridJuego),j,i)),PuntoRojo);
+				if(checkJugada(pcActual,pcSiguiente,Juego.UserTurn)==0)
+				{
+					gtk_label_set_text(GTK_LABEL(LabeldeControl), "movimiento valido");
+					gtk_image_set_from_file(GTK_IMAGE(gtk_grid_get_child_at(GTK_GRID(GridJuego),j,i)),PuntoNegro);
+					imprimirTablero();
+				}else{
+					gtk_label_set_text(GTK_LABEL(LabeldeControl), ErrorMovimiento);
+					contador=0;
+				}
 			}else{
 				gtk_label_set_text(GTK_LABEL(LabeldeControl), ErrorMovimiento);
-				contador--;
+				contador=0;
 			}
 		}
 	}
+	do{
+	  pcSiguiente.x = coinFlip(15);
+	  pcSiguiente.y = coinFlip(15);
+	  pcActual.x = coinFlip(15);
+	  pcActual.y = coinFlip(15);
+	  if(tablero[pcActual.x][pcActual.y] == Juego.MachineSide)
+	  {
+		  bandera =  checkJugada(pcActual,pcSiguiente,Juego.MachineTurn);
+	  	  imprimirTablero();
+	  }
+	}while(bandera == 0);
 }
 
 
@@ -480,12 +548,61 @@ int victoriaNegro()
   return 0;
 }
 
+/*
+ * funcion encargada de cargar los resultados de las partidas 
+ */
+void CrearEstadisticas()
+{
+	StructEstadisticas GuardadoStats;
+	char str[19];
+	int cont=0;
+	char c;
+	while((Estadisticas=fopen(RutaEstadisticas,"r+"))==NULL) //se abre el archivo de estadisticas en modo lectura y escritura
+	{
+		printf("Error al abrir la carpeta de estadisticas para la lectura e ingreso \n");
+		return;
+	}
+	do
+	{
+		for(;(c=fgetc(Estadisticas))!=':';cont++) //se leen los primeros caracteres de cada linea hasta : para determinar si el jugador ya est[a registrado
+		{
+			str[cont]=c;
+		}
+		if(strcmp(str,Juego.username,19)==0)//si encuentra un jugador registrado lo que hace es copiar los elementos que se encuentran luego de los : dentro de las variables
+											//tipo struct que se crearon para almavenar los datos 
+		{
+			fread(&GuardadoStats,sizeof(StructEstadisticas),1,Estadisticas);
+			victoria==0?GuardadoStats.ganadas++:GuardadoStats.perdidas++;
+			GuardadoStats.totales++;//se modifican los valroes de las variables dependiendo de si el jugador gana o pierde la partida 
+			victoria=1;
+			fseek(Estadisticas,-sizeof(StructEstadisticas),SEEK_CUR);//se devuelve el puntero del archivo al lugar justo antes de los datos cargados anteriormente para modificarlos
+			fwrite(&GuardadoStats, sizeof(StructEstadisticas), 1, Estadisticas);
+			fclose(Estadisticas);
+			return;
+		}else{
+			if (fseek(Estadisticas, 33, SEEK_CUR) != 0) 
+			{
+				printf("Error al mover el puntero del archivo.\n");
+			}
+		}
+		cont=0;
+	}while(feof(Estadisticas)); //si no se encontro un jugador registrado se crea un registro del mismo justo al final del archivo
+	gchar a[200];
+	strcat(a,Juego.username);
+	strcat(a,':');
+	strcat(a,&GuardadoStats);
+	fseek(Estadisticas,0,SEEK_END);
+	fprintf(Estadisticas,a);
+	fclose(Estadisticas);
+}
+
 int checkJugada(coord pcActual,coord pcSiguiente,int turno,int colorJugador){
     int coord[4] = {pcActual.x,pcActual.y,pcSiguiente.x,pcSiguiente.y};
     bool isValid = false;
     int absDiffI = abs(coord[0]-coord[2]);
     int absDiffJ = abs(coord[1]-coord[3]);
     //No se puede seleccionar una pieza vacia
+   //dkvkfnvkdfnvjnvjndvjnsjvn
     if(tablero[coord[0]][coord[1]] == '-' && coord[0] == coord[2] && coord[1] == coord[3]){
         return false;
     }
@@ -509,6 +626,9 @@ int checkJugada(coord pcActual,coord pcSiguiente,int turno,int colorJugador){
         			imprimirTablero();
         			if (victoria!=0)
                     {
+        				Estadisticas=fopen(RutaEstadisticas,"w");
+						fwrite(EncabezadoEstadiscas,1,strlen(EncabezadoEstadiscas),Estadisticas);
+						fclose(Estadisticas);
                        // printf("VICTORIA DE %s", nombre);
                      //   break;
                     }
@@ -523,8 +643,8 @@ int checkJugada(coord pcActual,coord pcSiguiente,int turno,int colorJugador){
                         //entre a la funcion de condicion de salto
                             //elegirCoord("Elija el proximo salto",&pcSiguiente);
                             int coord[4] = {pcActual.x,pcActual.y,pcSiguiente.x,pcSiguiente.y};
-//                            int absDiffI = abs(coord[0]-coord[2]);
-//                            int absDiffJ = abs(coord[1]-coord[3]);
+ //                           int absDiffI = abs(coord[0]-coord[2]);
+   //                         int absDiffJ = abs(coord[1]-coord[3]);
                             isValid = (tablero[coord[2]][coord[3]] != '-')? false: isJumpable(tablero,coord);
                             pcActual=pcSiguiente;
                             tablero[coord[0]][coord[1]] = '-';
@@ -533,9 +653,12 @@ int checkJugada(coord pcActual,coord pcSiguiente,int turno,int colorJugador){
                 			imprimirTablero();
                 			if (victoria!=0)
                 			{
+                				Estadisticas=fopen(RutaEstadisticas,"w");
+								fwrite(EncabezadoEstadiscas,1,strlen(EncabezadoEstadiscas),Estadisticas);
+								fclose(Estadisticas);
                 			//  printf("VICTORIA DE %s", nombre);
                 			//  break;
-                				//
+                			//
                 			}
                         }
                         if (salto == 2)
@@ -599,7 +722,8 @@ int main (int argc, char *argv[])
 	VentanaAyuda  = GTK_WIDGET(gtk_builder_get_object(builder,"VentanaAyuda"));
 	VentanaBando  = GTK_WIDGET(gtk_builder_get_object(builder,"VentanaBando"));
 	VentanaJuego  = GTK_WIDGET(gtk_builder_get_object(builder,"VentanaJuego"));
-	VentanaStats = GTK_WIDGET(gtk_builder_get_object(builder,"VentanaStats"));
+	VentanaStats  = GTK_WIDGET(gtk_builder_get_object(builder,"VentanaStats"));
+	VentanaSalir  = GTK_WIDGET(gtk_builder_get_object(builder,"VentanaSalir"));
 
 	//botones para ventana de inicio
 	pvm  		= GTK_WIDGET(gtk_builder_get_object(builder, "pvm"));
@@ -615,7 +739,6 @@ int main (int argc, char *argv[])
 	//botones de ventana ayuda
 	AyudaAtras  = GTK_WIDGET (gtk_builder_get_object(builder,"AyudaAtras"));
 	g_signal_connect (AyudaAtras,"button-press-event",G_CALLBACK(CambiarVen),ayudaainicio);
-//
 
 	//botones de ventana bando
 	//botones de acceso
@@ -632,12 +755,12 @@ int main (int argc, char *argv[])
 	Aleatorio	= GTK_WIDGET(gtk_builder_get_object(builder,"Aleatorio"));
 	g_signal_connect (Aleatorio,"button-press-event",G_CALLBACK(SetSide),neutral);
 	//Edit botones de seleccion de jugador
-	Local= GTK_WIDGET(gtk_builder_get_object(builder,"america"));
-	g_signal_connect (Local,"button-press-event",G_CALLBACK(SetSide),Loc);
-	Maquina= GTK_WIDGET(gtk_builder_get_object(builder,"usrr"));
-	g_signal_connect (Maquina,"button-press-event",G_CALLBACK(SetSide),Mac);
-	AleatorioF= GTK_WIDGET(gtk_builder_get_object(builder,"Aleatorio"));
-	g_signal_connect (AleatorioF,"button-press-event",G_CALLBACK(SetSide),Al);
+	Local= GTK_WIDGET(gtk_builder_get_object(builder,"Local"));
+	g_signal_connect (Local,"button-press-event",G_CALLBACK(SetTurn),Loc);
+	Maquina= GTK_WIDGET(gtk_builder_get_object(builder,"Maquina"));
+	g_signal_connect (Maquina,"button-press-event",G_CALLBACK(SetTurn),Mac);
+	AleatorioF 	= GTK_WIDGET(gtk_builder_get_object(builder,"AleatorioF"));
+	g_signal_connect (AleatorioF,"button-press-event",G_CALLBACK(SetTurn),Al);
 
 
 	//label nombre del jugador
@@ -669,6 +792,7 @@ int main (int argc, char *argv[])
 	EventBox	= GTK_WIDGET(gtk_builder_get_object(builder,"EventBox"));
 	g_signal_connect (EventBox,"button-press-event",G_CALLBACK(ClickGrilla),NULL);
 	GridJuego	= GTK_WIDGET(gtk_builder_get_object(builder,"GridJuego"));
+
 	//ventana estadisticas
 	ChooserStats= GTK_WIDGET(gtk_builder_get_object(builder, "ChooserStats"));
 	BotonStats  = GTK_WIDGET(gtk_builder_get_object (builder,"BotonStats"));
@@ -681,10 +805,16 @@ int main (int argc, char *argv[])
 	g_signal_connect (ChooserStats, "file-set",G_CALLBACK(guardar),NULL);
 	g_signal_connect (BotonStats, "button-press-event",G_CALLBACK(mostrar),NULL);
 
-
+	if ((Estadisticas=fopen(RutaEstadisticas,"r"))==NULL)
+	{
+		Estadisticas=fopen(RutaEstadisticas,"w");
+		fwrite(EncabezadoEstadiscas,1,strlen(EncabezadoEstadiscas),Estadisticas);
+		fclose(Estadisticas);
+	}
 	gtk_widget_show_all (VentanaInicio);
 
 	gtk_main();
 
     return 0;
  }
+
